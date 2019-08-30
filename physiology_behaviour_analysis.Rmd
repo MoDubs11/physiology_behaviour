@@ -1,0 +1,153 @@
+---
+title: "Physiology & Behaviour Analysis"
+author: "Maureen Anne Williams"
+date: "`r Sys.Date()`"
+output:   
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load packages and prep data
+```{r}
+library("mgcv")
+library("lme4")
+library("plyr")
+library("ggplot2")
+total<-read.csv("total_budget_2.csv", header=T, stringsAsFactors = F) #load total phyusiology spreadsheet, top row headers, strings are not factors
+
+attach(total) #attach physiology sheet
+total[total == "#N/A"] <- NA #Make sure NAs read as NAs
+str(total) #check structure of the dataset
+
+#Structure the total physiology dataset for analysis
+total$resp_rate<-as.numeric(total$resp_rate)
+total$dryweight_mg<-as.numeric(total$dryweight_mg) 
+total$gam_dryweight_mg<-as.numeric(total$gam_dryweight_mg) 
+total$inf_status<-as.factor(total$inf_status)
+total$sex<-as.factor(total$sex)
+total$gammarus<-as.factor(total$gammarus)
+total$temp<-as.numeric(total$temp)
+total$blanks<-as.numeric(total$blanks)
+total$saturation<-as.numeric(total$saturation)
+total$volume_liter<-as.numeric(total$volume_liter)
+total$change_percent<-as.numeric(total$change_percent)
+total$time_h<-as.numeric(total$time_h)
+total$assimilation<-as.numeric(total$assimilation)
+total$filter_dw_initial<-as.numeric(total$filter_dw_initial)
+total$filter_dw_final<-as.numeric(total$filter_dw_final)
+total$poop_weight<-as.numeric(total$poop_weight)
+total$efficiency<-as.numeric(total$efficiency)
+total$init_wet_gam<-as.numeric(total$init_wet_gam)
+total$leaf_change<-as.numeric(total$leaf_change)
+total$rate<-as.numeric(total$rate)
+total$feeding_rate<-as.numeric(total$feeding_rate)
+total$resp_rate_uncorrected<-total$resp_rate*total$dryweight_mg
+str(total)
+
+#Load the behaviour dataset 
+behav_total<-read.csv("behaviour_total.csv", header=T, stringsAsFactors = F)
+#Structure the total behaviour dataset for analysis
+behav_total$geo_score<-as.numeric(behav_total$geo_score)
+behav_total$photo_score<-as.numeric(behav_total$photo_score)
+behav_total$photo_score10<-as.numeric(behav_total$photo_score)*10
+behav_total$inf_status<-as.factor(behav_total$inf_status)
+behav_total$temp<-as.numeric(behav_total$temp)
+behav_total$gam_id<-as.factor(behav_total$gam_id)
+behav_total$sex<-as.factor(behav_total$sex)
+
+
+```
+
+#Physiology Analysis
+##Feeding anaylsis 
+```{r}
+#Generate feeding models
+feeding_GAM<-gam(total$feeding_rate~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+feeding_GLM<-glm(total$feeding_rate~total$inf_status*total$temp+total$sex)
+#generate feeding AICs
+AIC(feeding_GAM)
+AIC(feeding_GLM)
+#generate feeding model tables 
+anova(feeding_GAM)
+summary(feeding_GLM)
+```
+
+##Respiration analysis
+```{r}
+#Generate respiration models
+resp_GAM<-gam(total$resp_rate~total$inf_status+total$sex+s(total$temp,k=6)+s(total$temp,k=6,by=total$inf_status), method="REML")
+resp_GAM_nosex<-gam(total$resp_rate~total$inf_status+s(total$temp,k=6)+s(total$temp,k=6,by=total$inf_status), method="REML")
+cresp_GAM<-gam(total$resp_rate~s(total$temp,k=4)+total$sex, method="REML")
+resp_GLM<-glm(total$resp_rate~total$inf_status*total$temp+total$sex)
+##generate respiration AICs
+AIC(resp_GAM)
+AIC(resp_GLM)
+##generate respiration model tables 
+anova(resp_GAM)
+summary(resp_GLM)
+```
+
+##Growth analysis
+```{r}
+#Generate growth models
+growth_GAM<-gam(total$rate~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+growth_GLM<-glm(total$rate~total$inf_status*total$temp+total$sex)
+##generate growth AICs
+AIC(growth_GAM)
+AIC(growth_GLM)
+##generate growth model tables 
+anova(growth_GAM)
+summary(growth_GLM)
+```
+
+##Efficiency analysis
+```{r}
+#Generate efficiency models
+eff_GAM<-gam(total$efficiency~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+eff_GLM<-glm(total$efficiency~total$inf_status*total$temp+total$sex)
+##generate eff AICs
+AIC(eff_GAM)
+AIC(eff_GLM)
+##generate eff model tables 
+anova(eff_GAM)
+summary(eff_GLM)
+```
+
+##Assimilation analysis
+```{r}
+#Generate assimilation models
+ass_GAM<-gam(total$assimilation~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+ass_GLM<-glm(total$assimilation~total$inf_status*total$temp+total$sex)
+##generate assimilation AICs
+AIC(ass_GAM)
+AIC(ass_GLM)
+##generate assimilation model tables 
+anova(ass_GAM)
+summary(ass_GLM)
+
+```
+
+
+
+#Behaviour Analysis
+
+
+#Load modified datasets for easy plotting
+```{r}
+feeding<-read.csv("feeding_Joules.csv", header=T, stringsAsFactors = F)
+growth_all<-read.csv("gamm_sizechange_1.csv", header=T, stringsAsFactors = F)
+resp_clean<-read.csv("resp_joules_clean.csv", header=T, stringsAsFactors = F)
+eff<-read.csv("efficiency.csv", header=T, stringsAsFactors = F)
+ass<-read.csv("ass.csv", header=T, stringsAsFactors = F)
+
+
+```
+
+
+
+
