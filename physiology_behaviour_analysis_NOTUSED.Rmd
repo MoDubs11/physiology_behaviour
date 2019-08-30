@@ -1,0 +1,219 @@
+---
+title: "physiology_behaviour_analysis_NOTUSED"
+author: "Maureen Anne Williams"
+date: "8/30/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Metabolic Theory Plots
+```{r}
+total$resp_rate<-as.numeric(total$resp_rate)
+total$resp_rate_uncorrected<-total$resp_rate*total$gam_dryweight_mg
+total$metx<-1/((8.6173303*10^-5)*(total$temp+273.15))
+total$resp_rate_watts<-total$resp_rate_uncorrected*0.000277777778
+
+total$mety<-log(total$resp_rate_watts*((total$gam_dryweight_mg*10^-3)^(-.75)))
+plot(total$mety~total$metx)
+met_total$tempF<-as.factor(met_total$temp)
+
+met_total<-total[!is.na(total$mety),]
+ggplot(met_total, aes(gam_dryweight_mg, mety, colour=tempF))+
+  geom_point(size=3)+
+  geom_smooth(method="lm", se=F)
+model2<-lm(met_total$mety~met_total$temp+met_total$gam_dryweight_mg+met_total$inf_status)
+print(paste("Metabolism = ", round(model2$coeff[1], digits = 2), " + ", round(model2$coeff[2], 
+          digits = 2), "*Temp", " + ", round(model2$coeff[3], digits = 2), "*Weight + ", 
+          round(model2$coeff[4], digits = 2),"*Infection Status + e", 
+          sep = ""))
+
+ggplot(resp_clean, aes(dryweight_mg, resprate, colour=tempF))+
+  geom_point(size=3)+
+  geom_smooth(method="lm", se=F)
+resp_clean$tempF<-as.factor(resp_clean$temp)
+
+```
+
+Effect Sizes
+```{r}
+library(effsize)
+library(reshape2)
+behav_total$inf_status<-as.factor(behav_total$inf_status)
+effsize_3<-behav_total[which(behav_total$temp==3),] 
+effsize_6<-behav_total[which(behav_total$temp==6),] 
+effsize_9<-behav_total[which(behav_total$temp==9),] 
+effsize_12<-behav_total[which(behav_total$temp==12),] 
+effsize_15<-behav_total[which(behav_total$temp==15),] 
+effsize_18<-behav_total[which(behav_total$temp==18),] 
+cliff.delta(effsize_3$geo_score,effsize_3$inf_status)
+cliff.delta(effsize_6$geo_score,effsize_6$inf_status)
+cliff.delta(effsize_9$geo_score,effsize_9$inf_status)
+cliff.delta(effsize_12$geo_score,effsize_12$inf_status)
+cliff.delta(effsize_15$geo_score,effsize_15$inf_status)
+cliff.delta(effsize_18$geo_score,effsize_18$inf_status)
+geoeff3<-cohen.d(effsize_3$geo_score,effsize_3$inf_status, na.rm=T)
+geoeff6<-cohen.d(effsize_6$geo_score,effsize_6$inf_status, na.rm=T)
+geoeff9<-cohen.d(effsize_9$geo_score,effsize_9$inf_status, na.rm=T)
+geoeff12<-cohen.d(effsize_12$geo_score,effsize_12$inf_status, na.rm=T)
+geoeff15<-cohen.d(effsize_15$geo_score,effsize_15$inf_status, na.rm=T)
+geoeff18<-cohen.d(effsize_18$geo_score,effsize_18$inf_status, na.rm=T)
+cliff.delta(effsize_3$photo_score,effsize_3$inf_status)
+cliff.delta(effsize_6$photo_score,effsize_6$inf_status)
+cliff.delta(effsize_9$photo_score,effsize_9$inf_status)
+cliff.delta(effsize_12$photo_score,effsize_12$inf_status)
+cliff.delta(effsize_15$photo_score,effsize_15$inf_status)
+cliff.delta(effsize_18$photo_score,effsize_18$inf_status)
+photoeff3<-cohen.d(effsize_3$photo_score,effsize_3$inf_status, na.rm=T)
+photoeff6<-cohen.d(effsize_6$photo_score,effsize_6$inf_status, na.rm=T)
+photoeff9<-cohen.d(effsize_9$photo_score,effsize_9$inf_status, na.rm=T)
+photoeff12<-cohen.d(effsize_12$photo_score,effsize_12$inf_status, na.rm=T)
+photoeff15<-cohen.d(effsize_15$photo_score,effsize_15$inf_status, na.rm=T)
+photoeff18<-cohen.d(effsize_18$photo_score,effsize_18$inf_status, na.rm=T)
+esize_behav <- data.frame("temp" = c(3,6,9,12,15,18), "geoeff" = c(geoeff3$estimate, geoeff6$estimate, geoeff9$estimate, geoeff12$estimate, geoeff15$estimate, geoeff18$estimate), "photoeff" = c(photoeff3$estimate, photoeff6$estimate, photoeff9$estimate, photoeff12$estimate, photoeff15$estimate, photoeff18$estimate), stringsAsFactors = FALSE)
+esb <- melt(esize_behav, id.vars="temp")
+
+
+esb$temp<-as.factor(esb$temp)
+cohen_lab <- expression(paste("Cohen's ", italic("d")))
+eff_size_plot_beh<-ggplot(esb, aes(x=temp, y=value)) +
+  geom_point(aes(shape= variable), size=4)+
+  ylim(c(0,1))+
+  xlab("Temperature °C")+
+  scale_shape_manual(values=c(1,19))+
+  ylab(cohen_lab)+
+  theme(axis.text=element_text(size=14, colour="black"),
+        axis.title=element_text(size=16,face="bold"),
+        panel.grid.major=element_blank(), legend.key=element_rect(fill='white'),
+        legend.position = "none", panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+resp_clean$inf_status<-as.factor(resp_clean$inf_status)
+respeffsize_3<-resp_clean[which(resp_clean$temp==3),] 
+respeffsize_6<-resp_clean[which(resp_clean$temp==6),] 
+respeffsize_9<-resp_clean[which(resp_clean$temp==9),] 
+respeffsize_12<-resp_clean[which(resp_clean$temp==12),] 
+respeffsize_15<-resp_clean[which(resp_clean$temp==15),] 
+respeffsize_18<-resp_clean[which(resp_clean$temp==18),] 
+respeff3<-cohen.d(respeffsize_3$resprate,respeffsize_3$inf_status, na.rm=T)
+respeff6<-cohen.d(respeffsize_6$resprate,respeffsize_6$inf_status, na.rm=T)
+respeff9<-cohen.d(respeffsize_9$resprate,respeffsize_9$inf_status, na.rm=T)
+respeff12<-cohen.d(respeffsize_12$resprate,respeffsize_12$inf_status, na.rm=T)
+respeff15<-cohen.d(respeffsize_15$resprate,respeffsize_15$inf_status, na.rm=T)
+respeff18<-cohen.d(respeffsize_18$resprate,respeffsize_18$inf_status, na.rm=T)
+
+feeding$inf_status<-as.factor(feeding$inf_status)
+feedeffsize_3<-feeding[which(feeding$temp==3),] 
+feedeffsize_6<-feeding[which(feeding$temp==6),] 
+feedeffsize_9<-feeding[which(feeding$temp==9),] 
+feedeffsize_12<-feeding[which(feeding$temp==12),] 
+feedeffsize_15<-feeding[which(feeding$temp==15),] 
+feedeffsize_18<-feeding[which(feeding$temp==18),] 
+feedeff3<-cohen.d(feedeffsize_3$aver,feedeffsize_3$inf_status, na.rm=T)
+feedeff6<-cohen.d(feedeffsize_6$aver,feedeffsize_6$inf_status, na.rm=T)
+feedeff9<-cohen.d(feedeffsize_9$aver,feedeffsize_9$inf_status, na.rm=T)
+feedeff12<-cohen.d(feedeffsize_12$aver,feedeffsize_12$inf_status, na.rm=T)
+feedeff15<-cohen.d(feedeffsize_15$aver,feedeffsize_15$inf_status, na.rm=T)
+feedeff18<-cohen.d(feedeffsize_18$aver,feedeffsize_18$inf_status, na.rm=T)
+
+eff$inf_status<-as.factor(eff$inf_status)
+effeffsize_3<-eff[which(eff$temp==3),] 
+effeffsize_6<-eff[which(eff$temp==6),] 
+effeffsize_9<-eff[which(eff$temp==9),] 
+effeffsize_12<-eff[which(eff$temp==12),] 
+effeffsize_15<-eff[which(eff$temp==15),] 
+effeffsize_18<-eff[which(eff$temp==18),] 
+effeff3<-cohen.d(effeffsize_3$efficiency,effeffsize_3$inf_status, na.rm=T)
+effeff6<-cohen.d(effeffsize_6$efficiency,effeffsize_6$inf_status, na.rm=T)
+effeff9<-cohen.d(effeffsize_9$efficiency,effeffsize_9$inf_status, na.rm=T)
+effeff12<-cohen.d(effeffsize_12$efficiency,effeffsize_12$inf_status, na.rm=T)
+effeff15<-cohen.d(effeffsize_15$efficiency,effeffsize_15$inf_status, na.rm=T)
+effeff18<-cohen.d(effeffsize_18$efficiency,effeffsize_18$inf_status, na.rm=T)
+
+ass$inf_status<-as.factor(ass$inf_status)
+asseffsize_3<-ass[which(ass$temp==3),] 
+asseffsize_6<-ass[which(ass$temp==6),] 
+asseffsize_9<-ass[which(ass$temp==9),] 
+asseffsize_12<-ass[which(ass$temp==12),] 
+asseffsize_15<-ass[which(ass$temp==15),] 
+asseffsize_18<-ass[which(ass$temp==18),] 
+asseff3<-cohen.d(asseffsize_3$ass,asseffsize_3$inf_status, na.rm=T)
+asseff6<-cohen.d(asseffsize_6$ass,asseffsize_6$inf_status, na.rm=T)
+asseff9<-cohen.d(asseffsize_9$ass,asseffsize_9$inf_status, na.rm=T)
+asseff12<-cohen.d(asseffsize_12$ass,asseffsize_12$inf_status, na.rm=T)
+asseff15<-cohen.d(asseffsize_15$ass,asseffsize_15$inf_status, na.rm=T)
+asseff18<-cohen.d(asseffsize_18$ass,asseffsize_18$inf_status, na.rm=T)
+
+growth_all$inf_status<-as.factor(growth_all$inf_status)
+groweffsize_3<-growth_all[which(growth_all$temp==3),] 
+groweffsize_6<-growth_all[which(growth_all$temp==6),] 
+groweffsize_9<-growth_all[which(growth_all$temp==9),] 
+groweffsize_12<-growth_all[which(growth_all$temp==12),] 
+groweffsize_15<-growth_all[which(growth_all$temp==15),] 
+groweffsize_18<-growth_all[which(growth_all$temp==18),] 
+groweff3<-cohen.d(groweffsize_3$rate,groweffsize_3$inf_status, na.rm=T)
+groweff6<-cohen.d(groweffsize_6$rate,groweffsize_6$inf_status, na.rm=T)
+groweff9<-cohen.d(groweffsize_9$rate,groweffsize_9$inf_status, na.rm=T)
+groweff12<-cohen.d(groweffsize_12$rate,groweffsize_12$inf_status, na.rm=T)
+groweff15<-cohen.d(groweffsize_15$rate,groweffsize_15$inf_status, na.rm=T)
+groweff18<-cohen.d(groweffsize_18$rate,groweffsize_18$inf_status, na.rm=T)
+
+
+
+
+
+
+esize_physio <- data.frame("temp" = c(3,6,9,12,15,18), 
+  "feedeff" = c(feedeff3$estimate, feedeff6$estimate, feedeff9$estimate, feedeff12$estimate, feedeff15$estimate, feedeff18$estimate), 
+  "asseff" = c(asseff3$estimate, asseff6$estimate, asseff9$estimate, asseff12$estimate, asseff15$estimate, asseff18$estimate), 
+  "respeff" = c(respeff3$estimate, respeff6$estimate, respeff9$estimate, respeff12$estimate, respeff15$estimate, respeff18$estimate), 
+  "groweff" = c(groweff3$estimate, groweff6$estimate, groweff9$estimate, groweff12$estimate, groweff15$estimate, groweff18$estimate), 
+  "effeff" = c(effeff3$estimate, effeff6$estimate, effeff9$estimate, effeff12$estimate, effeff15$estimate, effeff18$estimate), 
+    stringsAsFactors = FALSE)
+esp <- melt(esize_physio, id.vars="temp")
+esp$value<-abs(esp$value)
+
+eff_size_plot_physio<-ggplot(esp, aes(x=temp, y=value)) +
+  geom_point(size=2)+
+  facet_grid(~plotcode,labeller=labeller(plotcode = labels))+
+  ylim(c(0,1))+
+  xlab("Temperature °C")+
+  ylab(cohen_lab)+
+  theme_bw()+
+  theme(axis.text=element_text(size=14, colour="black"),
+        axis.title=element_text(size=16,face="bold"),
+        panel.grid.major=element_blank(), legend.key=element_rect(fill='white'),
+        panel.grid.minor = element_blank(), strip.background = element_blank(),
+        panel.border = element_rect(colour = "black"),
+        axis.line = element_line(colour = "black"))
+labels <- c("3" = "Consumption", "5" = "Assimilation", "1"="Respiration", "4"="Growth", "2"="Efficiency")
+esp$plotcode[esp$variable=="respeff"] <- "1" 
+esp$plotcode[esp$variable=="feedeff"] <- "3" 
+esp$plotcode[esp$variable=="effeff"] <- "2" 
+esp$plotcode[esp$variable=="groweff"] <- "4"
+esp$plotcode[esp$variable=="asseff"] <- "5"
+
+
+plot_grid(eff_size_plot_physio, eff_size_plot_beh, nrow=2, align="v", axis = 'lr')
+
+
+```
+
+
+Survival
+```{r}
+surviveplot<-ggplot(resp_summary, aes(x=temp, y=survival, shape=inf_status, group=inf_status)) + 
+  geom_point(size=3)+
+  xlab("Temperature °C")+
+  ylim(.3,.7)+
+  ylab("Survival")+
+  scale_shape_manual(values=c(1,19))+
+  theme(panel.grid.major = element_blank(), 
+        legend.position = "none", panel.grid.minor = element_blank(),
+        #axis.text=element_text(size=16),
+        #axis.title=element_text(size=14),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+```
+

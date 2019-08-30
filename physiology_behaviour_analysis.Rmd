@@ -12,12 +12,13 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Load packages and prep data
+#Load packages and prep data
 ```{r}
 library("mgcv")
 library("lme4")
 library("plyr")
 library("ggplot2")
+library("cowplot")
 total<-read.csv("total_budget_2.csv", header=T, stringsAsFactors = F) #load total phyusiology spreadsheet, top row headers, strings are not factors
 
 attach(total) #attach physiology sheet
@@ -62,6 +63,16 @@ behav_total$sex<-as.factor(behav_total$sex)
 
 
 ```
+
+##Load modified physiology datasets for easy plotting
+```{r}
+feeding<-read.csv("feeding_Joules.csv", header=T, stringsAsFactors = F)
+growth_all<-read.csv("gamm_sizechange_1.csv", header=T, stringsAsFactors = F)
+resp_clean<-read.csv("resp_joules_clean.csv", header=T, stringsAsFactors = F)
+eff<-read.csv("efficiency.csv", header=T, stringsAsFactors = F)
+ass<-read.csv("ass.csv", header=T, stringsAsFactors = F)
+```
+
 
 #Physiology Analysis
 ##Feeding anaylsis 
@@ -133,21 +144,382 @@ summary(ass_GLM)
 ```
 
 
-
 #Behaviour Analysis
-
-
-#Load modified datasets for easy plotting
+##Initial Weights T.Test
 ```{r}
-feeding<-read.csv("feeding_Joules.csv", header=T, stringsAsFactors = F)
-growth_all<-read.csv("gamm_sizechange_1.csv", header=T, stringsAsFactors = F)
-resp_clean<-read.csv("resp_joules_clean.csv", header=T, stringsAsFactors = F)
-eff<-read.csv("efficiency.csv", header=T, stringsAsFactors = F)
-ass<-read.csv("ass.csv", header=T, stringsAsFactors = F)
+beh_weight<-read.csv("weights_1.csv")
+beh_inf <- beh_weight$init_wetweight[beh_weight$inf_status == "I"]
+beh_uninf <- beh_weight$init_wetweight[beh_weight$inf_status == "U"]
+t.test(beh_inf,beh_uninf)
+t.test(beh_inf,beh_uninf,var.equal=TRUE)
+t.test(beh_uninf,beh_inf)
+```
+
+##Full Behaviour Analysis, All Runs
+```{r}
+#Phototaxis
+LMER_plot_photo <-
+  lmer(photo_score ~ inf_status + (1 |
+                                     gam_id),
+       REML = FALSE,
+       data = behav_total)
+summary(LMER_plot_photo)
+LMER_full_photo <-
+  lmer(
+    behav_total$photo_score ~ behav_total$temp + behav_total$inf_status + behav_total$sex + (1 |
+                                                                                               behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_interacting_photo <-
+  lmer(
+    behav_total$photo_score ~ behav_total$temp * behav_total$inf_status + behav_total$sex + (1 |
+                                                                                               behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_notemp_photo <-
+  lmer(
+    behav_total$photo_score ~ behav_total$inf_status + behav_total$sex + (1 |
+                                                                            behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_noinf_photo <-
+  lmer(
+    behav_total$photo_score ~ behav_total$temp + behav_total$sex + (1 |
+                                                                      behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_nosex_photo <-
+  lmer(
+    behav_total$photo_score ~ behav_total$temp + behav_total$inf_status + (1 |
+                                                                             behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+anova(LMER_full_photo, LMER_noinf_photo)
+anova(LMER_full_photo, LMER_interacting_photo)
+anova(LMER_full_photo, LMER_notemp_photo)
+anova(LMER_full_photo, LMER_nosex_photo)
+
+#Geotaxis
+LMER_plot_geo <-
+  lmer(geo_score ~ temp + inf_status  + (1 |
+                                           gam_id),
+       REML = FALSE,
+       data = behav_total)
+summary(LMER_plot_geo)
+LMER_interacting_geo <-
+  lmer(geo_score ~ temp * inf_status + sex + (1 |
+                                                gam_id),
+       REML = FALSE,
+       data = behav_total)
+LMER_notemp_geo <-
+  lmer(
+    behav_total$geo_score ~ behav_total$inf_status + behav_total$sex + (1 |
+                                                                          behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_noinf_geo <-
+  lmer(
+    behav_total$geo_score ~ behav_total$temp + behav_total$sex + (1 |
+                                                                    behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_nosex_geo <-
+  lmer(
+    behav_total$geo_score ~ behav_total$temp + behav_total$inf_status + (1 |
+                                                                           behav_total$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+anova(LMER_full_geo, LMER_noinf_geo)
+anova(LMER_full_geo, LMER_interacting_geo)
+anova(LMER_full_geo, LMER_notemp_geo)
+anova(LMER_full_geo, LMER_nosex_geo)
+
+```
+
+##Full Behaviour Analysis, First Run
+```{r}
+#Geotaxis
+geofirst <- behav_total[which(behav_total$geo_order == '1'), ]
+geofirst_nona <- g
+photofirst <- behav_total[which(behav_total$photo_order == '1'), ]
+LMER_full_geo_first <-
+  glm(geofirst$geo_score ~ geofirst$temp * geofirst$inf_status + geofirst$sex,
+      na.action = na.omit)
+LMER_interacting_geo_first <-
+  lmer(
+    geofirst$geo_score ~ geofirst$temp * geofirst$inf_status + geofirst$sex + (1 |
+                                                                                 geofirst$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_notemp_geo_first <-
+  lmer(
+    geofirst$geo_score ~ geofirst$inf_status + geofirst$sex + (1 |
+                                                                 geofirst$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_noinf_geo_first <-
+  lmer(
+    geofirst$geo_score ~ geofirst$temp + geofirst$sex + (1 |
+                                                           geofirst$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+LMER_nosex_geo_first <-
+  lmer(
+    geofirst$geo_score ~ geofirst$temp + geofirst$inf_status + (1 |
+                                                                  geofirst$gam_id),
+    REML = FALSE,
+    na.action = na.omit
+  )
+anova(LMER_full_geo_first, LMER_noinf_geo_first)
+anova(LMER_full_geo_first, LMER_interacting_geo_first)
+anova(LMER_full_geo_first, LMER_notemp_geo_first)
+anova(LMER_full_geo_first, LMER_nosex_geo_first)
+
+#Phototaxis
+LMER_full_photo_first<-lmer(photofirst$photo_score~photofirst$temp + photofirst$inf_status + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
+LMER_interacting_photo_first<-lmer(photofirst$photo_score~photofirst$temp*photofirst$inf_status + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
+LMER_notemp_photo_first<-lmer(photofirst$photo_score~ photofirst$inf_status + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
+LMER_noinf_photo_first<-lmer(photofirst$photo_score~photofirst$temp + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
+LMER_nosex_photo_first<-lmer(photofirst$photo_score~photofirst$temp + photofirst$inf_status + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
+anova(LMER_full_photo_first,LMER_noinf_photo_first)
+anova(LMER_full_photo_first,LMER_interacting_photo_first)
+anova(LMER_full_photo_first,LMER_notemp_photo_first)
+anova(LMER_full_photo_first,LMER_nosex_photo_first)
+
+total$resp_rate_log<-log(total$resp_rate)
+plot(total$resp_rate_log~total$temp)
 
 
 ```
 
 
 
+#Data summaries
+```{r}
+feeding_summary <- ddply(feeding, c("inf_status", "temp"), summarise,
+                         N    = length(aver),
+                         mean = mean(aver),
+                         sd   = sd(aver),
+                         se   = sd / sqrt(N)
+)
+growth_all$weight_change<-growth_all$weight_change/(1000000000)
+growth_summary <- ddply(growth_all, c("inf_status", "temp"), summarise,
+                        N    = length(weight_change),
+                        mean = mean(weight_change),
+                        sd   = sd(weight_change),
+                        se   = sd / sqrt(N)
+)
+
+resp_summary <- ddply(resp_clean, c("inf_status", "temp"), summarise,
+                      N    = length(resprate),
+                      mean = mean(resprate),
+                      sd   = sd(resprate),
+                      se   = sd / sqrt(N)
+)
+resp_summary$survival<-resp_summary$N/15
+ass_summary <- ddply(ass, c("inf_status", "temp"), summarise,
+                     N    = length(ass),
+                     mean = mean(ass),
+                     sd   = sd(ass),
+                     se   = sd / sqrt(N)
+)
+
+eff_summary <- ddply(eff, c("inf_status", "temp"), summarise,
+                     N    = length(efficiency),
+                     mean = mean(efficiency),
+                     sd   = sd(efficiency),
+                     se   = sd / sqrt(N)
+)
+
+geo_summary <- ddply(behav_total, c("inf_status", "temp"), summarise,
+                     N    = length(geo_score),
+                     mean = mean(geo_score,na.rm=T),
+                     median= median(geo_score, na.rm=T),
+                     sd   = sd(geo_score,na.rm=T),
+                     se   = sd / sqrt(N)
+)
+
+photo_summary <- ddply(behav_total, c("inf_status", "temp"), summarise,
+                       N    = length(photo_score),
+                       mean = mean(photo_score, na.rm=T),
+                       median= median(photo_score, na.rm=T),
+                       sd   = sd(photo_score, na.rm=T),
+                       se   = sd / sqrt(N)
+)
+
+photo_summary_print <- ddply(behav_total, c("inf_status"), summarise,
+                             N    = length(photo_score),
+                             mean = mean(photo_score),
+                             sd   = sd(photo_score),
+                             se   = sd / sqrt(N)
+)
+
+```
+
+#Plotting
+
+```{r}
+pd <- position_dodge(width = 0.7)
+```
+
+##Physiology
+```{r}
+
+respplot<-ggplot(resp_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status, color=inf_status)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
+  geom_point(size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  scale_colour_manual(values=c("gray", "black"))+
+  geom_smooth(method = gam, formula = y ~ splines::bs(x, 4), se=F)+
+    xlab("")+
+  ylab("Respiration\n (J/mg/h)")+
+  theme(panel.grid.major = element_blank(), legend.key=element_rect(fill='white'),
+        legend.position = c(0.3, 0.8), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        #axis.text=element_text(size=16),
+        #axis.title=element_text(size=14),
+        axis.line = element_line(colour = "black"))
+
+effplot<-ggplot(eff_summary, aes(x=temp, y=mean)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, fill=inf_status, group=inf_status), width=.3, position=pd, color="#000000") +
+  geom_point(aes(fill=inf_status, group=inf_status), size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  xlab("")+
+  ylab("Efficiency (%)")+
+  geom_smooth(method = gam, formula = y ~ splines::bs(x, 4), se=F, color="black")+
+  theme(panel.grid.major = element_blank(), 
+        legend.position = "none", panel.grid.minor = element_blank(),
+        #axis.text=element_text(size=16),
+        #axis.title=element_text(size=14),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+feedingplot2<-ggplot(feeding_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
+  geom_point(size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  xlab("")+
+  ylab("Consumption\n(mg/day/mg)")+
+  scale_shape_manual(values=c(1,19))+
+  theme(panel.grid.major = element_blank(), legend.position = "none", 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black"))
+        #axis.text=element_text(size=16),
+        #axis.title=element_text(size=14))
+
+growthplot<-ggplot(growth_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
+  geom_point(size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  xlab("")+
+  ylab("Growth Rate\n(ug/day)")+
+  theme(panel.grid.major = element_blank(), legend.position = "none", 
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(), 
+        axis.line = element_line(colour = "black"))
+        #axis.text=element_text(size=16),
+        #axis.title=element_text(size=14))
+
+assplot<-ggplot(ass_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
+  geom_point(size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  xlab("Temperature")+
+  ylab("Assimilation\n(J/day)")+
+  theme(panel.grid.major = element_blank(), 
+        legend.position = "none", panel.grid.minor = element_blank(),
+        #axis.text=element_text(size=16),
+        #axis.title=element_text(size=14),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+
+pcol<-plot_grid(NULL,
+                 respplot + theme(legend.position="none"),
+                NULL,
+                 effplot + theme(legend.position="none"),
+                NULL, 
+                feedingplot2 + theme(legend.position="none"),
+                NULL, 
+                 growthplot + theme(legend.position="none"),
+                NULL, 
+                assplot + theme(legend.position="none"),
+                 align = 'vh',
+                 labels=c("(a)","","(b)","","(c)","","(d)","","(e)"),
+                 hjust = -1,
+                 nrow = 5,
+                rel_widths = c(0.09, 1.0,0.05, 0.05, 0.05,0.05,0.05,0.05,0.05,0.05)
+)
+plot_grid(NULL,pcol, ncol = 1, nrow=2, rel_heights = c(0.05,1.0))
+```
+
+
+
+##Behaviour
+```{r}
+photo_summary$xloc<- photo_summary$temp+0.5
+photo_summary$yloc<- NA
+photo_summary$yloc<- as.numeric(photo_summary$yloc)
+photo_summary$yloc <- photo_summary$mean-5
+photo_summary$yloc[photo_summary$inf_status == "U" & photo_summary$temp== "3"] <- 34
+
+
+photoplot<-ggplot(photo_summary, aes(x=temp, y=mean)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, fill=inf_status, group=inf_status), width=.3, position=pd, color="#000000") +
+  geom_point(aes(fill=inf_status, group=inf_status), size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  xlab("")+
+  ylab("Phototaxis Score")+
+  xlim(2.5,19)+
+  geom_segment(aes(x = 3, y = 49.42, xend = 18, yend = 49.42), linetype="dashed")+
+  geom_segment(aes(x = 3, y = 44.55, xend = 18, yend = 44.55))+
+ #geom_smooth(method='glm', se=FALSE, colour="black")+
+ #stat_smooth(method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
+  scale_shape_manual(values=c(1,19))+
+  theme(panel.grid.major = element_blank(),  
+        axis.text=element_text(size=16,color = "black"),
+        axis.title=element_text(size=16),
+        legend.position="none", panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+
+geo_summary$xloc<- geo_summary$temp+0.5
+geo_summary$yloc<- NA
+geo_summary$yloc[geo_summary$inf_status == "U" & geo_summary$temp== "3"] <- 10
+
+geoplot<-ggplot(geo_summary, aes(x=temp, y=mean)) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, fill=inf_status, group=inf_status), width=.3, position=pd, color="#000000") +
+  geom_point(aes(fill=inf_status, group=inf_status), size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("white", "black"))+
+  xlab("Temperature °C")+
+  ylab("Geotaxis Score")+
+  xlim(2.5,19)+ 
+  geom_segment(aes(x = 3, y = 18, xend = 18, yend = 29.5), linetype="dashed")+
+  geom_segment(aes(x = 3, y = 14, xend = 18, yend = 25.5))+
+  #geom_smooth(method='lm', se=F, formula = y~x)+
+  #geom_smooth(method='glm', se=FALSE, colour="black")+
+ # stat_smooth(method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
+  scale_shape_manual(values=c(1,19))+
+  theme(panel.grid.major = element_blank(),
+        axis.text=element_text(size=16, color = "black"),
+        axis.title=element_text(size=16),
+        legend.position="none", panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black"))
+
+
+
+plot_grid(photoplot,geoplot,
+          labels=c("(a)","b."),
+          ncol=1, nrow=2)
+```
 
