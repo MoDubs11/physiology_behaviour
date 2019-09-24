@@ -78,8 +78,8 @@ ass<-read.csv("ass.csv", header=T, stringsAsFactors = F)
 ##Feeding anaylsis 
 ```{r}
 #Generate feeding models
-feeding_GAM<-gam(total$feeding_rate~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
-feeding_GLM<-glm(total$feeding_rate~total$inf_status*total$temp+total$sex)
+feeding_GAM<-gam(total$feeding_rate~total$inf_status+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+feeding_GLM<-glm(total$feeding_rate~total$inf_status*total$temp)
 #generate feeding AICs
 AIC(feeding_GAM)
 AIC(feeding_GLM)
@@ -91,10 +91,10 @@ summary(feeding_GLM)
 ##Respiration analysis
 ```{r}
 #Generate respiration models
-resp_GAM<-gam(total$resp_rate~total$inf_status+total$sex+s(total$temp,k=6)+s(total$temp,k=6,by=total$inf_status), method="REML")
+resp_GAM<-gam(total$resp_rate~total$inf_status+s(total$temp,k=6)+s(total$temp,k=6,by=total$inf_status), method="REML")
 resp_GAM_nosex<-gam(total$resp_rate~total$inf_status+s(total$temp,k=6)+s(total$temp,k=6,by=total$inf_status), method="REML")
 cresp_GAM<-gam(total$resp_rate~s(total$temp,k=4)+total$sex, method="REML")
-resp_GLM<-glm(total$resp_rate~total$inf_status*total$temp+total$sex)
+resp_GLM<-glm(total$resp_rate~total$inf_status*total$temp)
 ##generate respiration AICs
 AIC(resp_GAM)
 AIC(resp_GLM)
@@ -106,8 +106,8 @@ summary(resp_GLM)
 ##Growth analysis
 ```{r}
 #Generate growth models
-growth_GAM<-gam(total$rate~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
-growth_GLM<-glm(total$rate~total$inf_status*total$temp+total$sex)
+growth_GAM<-gam(total$rate~total$inf_status+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+growth_GLM<-glm(total$rate~total$inf_status*total$temp)
 ##generate growth AICs
 AIC(growth_GAM)
 AIC(growth_GLM)
@@ -119,8 +119,8 @@ summary(growth_GLM)
 ##Efficiency analysis
 ```{r}
 #Generate efficiency models
-eff_GAM<-gam(total$efficiency~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
-eff_GLM<-glm(total$efficiency~total$inf_status*total$temp+total$sex)
+eff_GAM<-gam(total$efficiency~total$inf_status+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+eff_GLM<-glm(total$efficiency~total$inf_status*total$temp)
 ##generate eff AICs
 AIC(eff_GAM)
 AIC(eff_GLM)
@@ -132,8 +132,8 @@ summary(eff_GLM)
 ##Assimilation analysis
 ```{r}
 #Generate assimilation models
-ass_GAM<-gam(total$assimilation~total$inf_status+total$sex+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
-ass_GLM<-glm(total$assimilation~total$inf_status*total$temp+total$sex)
+ass_GAM<-gam(total$assimilation~total$inf_status+s(total$temp,k=4)+s(total$temp,k=4,by=total$inf_status))
+ass_GLM<-glm(total$assimilation~total$inf_status*total$temp)
 ##generate assimilation AICs
 AIC(ass_GAM)
 AIC(ass_GLM)
@@ -157,90 +157,61 @@ t.test(beh_uninf,beh_inf)
 
 ##Full Behaviour Analysis, All Runs
 ```{r}
+options(na.action='na.exclude')
+
 #Phototaxis
-LMER_plot_photo <-
-  lmer(photo_score ~ inf_status + (1 |
-                                     gam_id),
+LMER_full_photo <-
+  lmer(photo_score ~ inf_status + temp+ (1 |gam_id),
        REML = FALSE,
        data = behav_total)
-summary(LMER_plot_photo)
-LMER_full_photo <-
-  lmer(
-    behav_total$photo_score ~ behav_total$temp + behav_total$inf_status + behav_total$sex + (1 |
-                                                                                               behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-LMER_interacting_photo <-
-  lmer(
-    behav_total$photo_score ~ behav_total$temp * behav_total$inf_status + behav_total$sex + (1 |
-                                                                                               behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
+
+LMER_interacting_photo<-
+  lmer(photo_score ~ inf_status * temp+ (1 |gam_id),
+       REML = FALSE,
+       data = behav_total)
+
 LMER_notemp_photo <-
-  lmer(
-    behav_total$photo_score ~ behav_total$inf_status + behav_total$sex + (1 |
-                                                                            behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
+  lmer(photo_score ~ inf_status + (1 |gam_id),
+       REML = FALSE,
+       data = behav_total)
+
+
 LMER_noinf_photo <-
-  lmer(
-    behav_total$photo_score ~ behav_total$temp + behav_total$sex + (1 |
-                                                                      behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-LMER_nosex_photo <-
-  lmer(
-    behav_total$photo_score ~ behav_total$temp + behav_total$inf_status + (1 |
-                                                                             behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
+  lmer(photo_score ~ temp + (1 |gam_id),
+       REML = FALSE,
+       data = behav_total)
+
 anova(LMER_full_photo, LMER_noinf_photo)
 anova(LMER_full_photo, LMER_interacting_photo)
 anova(LMER_full_photo, LMER_notemp_photo)
-anova(LMER_full_photo, LMER_nosex_photo)
 
 #Geotaxis
-LMER_plot_geo <-
-  lmer(geo_score ~ temp + inf_status  + (1 |
-                                           gam_id),
+
+LMER_full_geo <-
+  lmer(geo_score ~ inf_status + temp+ (1 |gam_id),
        REML = FALSE,
        data = behav_total)
-summary(LMER_plot_geo)
-LMER_interacting_geo <-
-  lmer(geo_score ~ temp * inf_status + sex + (1 |
-                                                gam_id),
+
+LMER_interacting_geo<-
+  lmer(geo_score ~ inf_status * temp+ (1 |gam_id),
        REML = FALSE,
        data = behav_total)
+
 LMER_notemp_geo <-
-  lmer(
-    behav_total$geo_score ~ behav_total$inf_status + behav_total$sex + (1 |
-                                                                          behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
+  lmer(geo_score ~ inf_status + (1 |gam_id),
+       REML = FALSE,
+       data = behav_total)
+
+
 LMER_noinf_geo <-
-  lmer(
-    behav_total$geo_score ~ behav_total$temp + behav_total$sex + (1 |
-                                                                    behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-LMER_nosex_geo <-
-  lmer(
-    behav_total$geo_score ~ behav_total$temp + behav_total$inf_status + (1 |
-                                                                           behav_total$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
+  lmer(geo_score ~ temp + (1 |gam_id),
+       REML = FALSE,
+       data = behav_total)
+
 anova(LMER_full_geo, LMER_noinf_geo)
 anova(LMER_full_geo, LMER_interacting_geo)
 anova(LMER_full_geo, LMER_notemp_geo)
-anova(LMER_full_geo, LMER_nosex_geo)
+
 
 ```
 
@@ -463,6 +434,8 @@ pcol<-plot_grid(NULL,
 plot_grid(NULL,pcol, ncol = 1, nrow=2, rel_heights = c(0.05,1.0))
 ```
 
+
+
 ##Behaviour
 ```{r}
 photo_summary$xloc<- photo_summary$temp+0.5
@@ -521,8 +494,3 @@ plot_grid(photoplot,geoplot,
           ncol=1, nrow=2)
 ```
 
-
-```{r}
-group_by(total, temp) %>% 
-skim()
-```
