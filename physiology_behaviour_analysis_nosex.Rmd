@@ -212,69 +212,12 @@ anova(LMER_full_geo, LMER_noinf_geo)
 anova(LMER_full_geo, LMER_interacting_geo)
 anova(LMER_full_geo, LMER_notemp_geo)
 
+behav_total$temp<-as.factor(behav_total$temp)
+library(multcomp)
+geo_diff<-lsmeans(LMER_full_geo, pairwise~temp*inf_status, adjust="tukey")
+photo_diff<-lsmeans(LMER_full_photo, pairwise~temp*inf_status, adjust="tukey")
 
 ```
-
-##Full Behaviour Analysis, First Run
-```{r}
-#Geotaxis
-geofirst <- behav_total[which(behav_total$geo_order == '1'), ]
-geofirst_nona <- g
-photofirst <- behav_total[which(behav_total$photo_order == '1'), ]
-LMER_full_geo_first <-
-  glm(geofirst$geo_score ~ geofirst$temp * geofirst$inf_status + geofirst$sex,
-      na.action = na.omit)
-LMER_interacting_geo_first <-
-  lmer(
-    geofirst$geo_score ~ geofirst$temp * geofirst$inf_status + geofirst$sex + (1 |
-                                                                                 geofirst$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-LMER_notemp_geo_first <-
-  lmer(
-    geofirst$geo_score ~ geofirst$inf_status + geofirst$sex + (1 |
-                                                                 geofirst$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-LMER_noinf_geo_first <-
-  lmer(
-    geofirst$geo_score ~ geofirst$temp + geofirst$sex + (1 |
-                                                           geofirst$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-LMER_nosex_geo_first <-
-  lmer(
-    geofirst$geo_score ~ geofirst$temp + geofirst$inf_status + (1 |
-                                                                  geofirst$gam_id),
-    REML = FALSE,
-    na.action = na.omit
-  )
-anova(LMER_full_geo_first, LMER_noinf_geo_first)
-anova(LMER_full_geo_first, LMER_interacting_geo_first)
-anova(LMER_full_geo_first, LMER_notemp_geo_first)
-anova(LMER_full_geo_first, LMER_nosex_geo_first)
-
-#Phototaxis
-LMER_full_photo_first<-lmer(photofirst$photo_score~photofirst$temp + photofirst$inf_status + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
-LMER_interacting_photo_first<-lmer(photofirst$photo_score~photofirst$temp*photofirst$inf_status + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
-LMER_notemp_photo_first<-lmer(photofirst$photo_score~ photofirst$inf_status + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
-LMER_noinf_photo_first<-lmer(photofirst$photo_score~photofirst$temp + photofirst$sex + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
-LMER_nosex_photo_first<-lmer(photofirst$photo_score~photofirst$temp + photofirst$inf_status + (1|photofirst$gam_id),REML=FALSE, na.action = na.omit)
-anova(LMER_full_photo_first,LMER_noinf_photo_first)
-anova(LMER_full_photo_first,LMER_interacting_photo_first)
-anova(LMER_full_photo_first,LMER_notemp_photo_first)
-anova(LMER_full_photo_first,LMER_nosex_photo_first)
-
-total$resp_rate_log<-log(total$resp_rate)
-plot(total$resp_rate_log~total$temp)
-
-
-```
-
-
 
 #Data summaries
 ```{r}
@@ -350,9 +293,10 @@ pd <- position_dodge(width = 0.7)
 respplot<-ggplot(resp_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status, color=inf_status)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
   geom_point(size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
-  scale_colour_manual(values=c("gray", "black"))+
-  geom_smooth(method = gam, formula = y ~ splines::bs(x, 4), se=F)+
+  scale_fill_manual(values=c("black", "white"))+
+  #scale_colour_manual(values=c("gray", "black"))+
+geom_smooth(aes(group = 1), method='glm', se=FALSE, colour="black")+
+stat_smooth(aes(group = 1), method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
     xlab("")+
   ylab("Respiration\n (J/mg/h)")+
   theme(panel.grid.major = element_blank(), legend.key=element_rect(fill='white'),
@@ -365,10 +309,9 @@ respplot<-ggplot(resp_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_st
 effplot<-ggplot(eff_summary, aes(x=temp, y=mean)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se, fill=inf_status, group=inf_status), width=.3, position=pd, color="#000000") +
   geom_point(aes(fill=inf_status, group=inf_status), size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
+  scale_fill_manual(values=c("black", "white"))+
   xlab("")+
   ylab("Efficiency (%)")+
-  geom_smooth(method = gam, formula = y ~ splines::bs(x, 4), se=F, color="black")+
   theme(panel.grid.major = element_blank(), 
         legend.position = "none", panel.grid.minor = element_blank(),
         #axis.text=element_text(size=16),
@@ -378,7 +321,9 @@ effplot<-ggplot(eff_summary, aes(x=temp, y=mean)) +
 feedingplot2<-ggplot(feeding_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
   geom_point(size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
+  scale_fill_manual(values=c("black", "white"))+
+  geom_smooth(aes(group = 1), method='glm', se=FALSE, colour="black")+
+stat_smooth(aes(group = 1), method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
   xlab("")+
   ylab("Consumption\n(mg/day/mg)")+
   scale_shape_manual(values=c(1,19))+
@@ -392,9 +337,9 @@ feedingplot2<-ggplot(feeding_summary, aes(x=temp, y=mean, fill=inf_status, group
 growthplot<-ggplot(growth_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
   geom_point(size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
+  scale_fill_manual(values=c("black", "white"))+
   xlab("")+
-  ylab("Growth Rate\n(ug/day)")+
+  ylab("Growth Rate\n(mg/day)")+
   theme(panel.grid.major = element_blank(), legend.position = "none", 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
@@ -405,7 +350,7 @@ growthplot<-ggplot(growth_summary, aes(x=temp, y=mean, fill=inf_status, group=in
 assplot<-ggplot(ass_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
   geom_point(size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
+  scale_fill_manual(values=c("black", "white"))+
   xlab("Temperature")+
   ylab("Assimilation\n(J/day)")+
   theme(panel.grid.major = element_blank(), 
@@ -418,9 +363,9 @@ assplot<-ggplot(ass_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_stat
 pcol<-plot_grid(NULL,
                  respplot + theme(legend.position="none"),
                 NULL,
-                 effplot + theme(legend.position="none"),
+                 feedingplot2 + theme(legend.position="none"),
                 NULL, 
-                feedingplot2 + theme(legend.position="none"),
+                effplot + theme(legend.position="none"),
                 NULL, 
                  growthplot + theme(legend.position="none"),
                 NULL, 
@@ -445,17 +390,15 @@ photo_summary$yloc <- photo_summary$mean-5
 photo_summary$yloc[photo_summary$inf_status == "U" & photo_summary$temp== "3"] <- 34
 
 
-photoplot<-ggplot(photo_summary, aes(x=temp, y=mean)) + 
-  geom_errorbar(aes(ymin=mean-se, ymax=mean+se, fill=inf_status, group=inf_status), width=.3, position=pd, color="#000000") +
-  geom_point(aes(fill=inf_status, group=inf_status), size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
+photoplot<-ggplot(photo_summary, aes(x=temp, y=mean, fill=inf_status), group=inf_status) + 
+  geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
+  geom_point(size=2, position=pd, shape= 21, colour="black")+
+  scale_fill_manual(values=c("black", "white"))+
   xlab("")+
   ylab("Phototaxis Score")+
   xlim(2.5,19)+
-  geom_segment(aes(x = 3, y = 49.42, xend = 18, yend = 49.42), linetype="dashed")+
-  geom_segment(aes(x = 3, y = 44.55, xend = 18, yend = 44.55))+
- #geom_smooth(method='glm', se=FALSE, colour="black")+
- #stat_smooth(method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
+  geom_smooth(aes(linetype=inf_status), method='glm', se=FALSE, colour="black")+
+  stat_smooth(aes(linetype=inf_status), method = "glm", colour = "black", geom = "ribbon", fill = NA)+
   scale_shape_manual(values=c(1,19))+
   theme(panel.grid.major = element_blank(),  
         axis.text=element_text(size=16,color = "black"),
@@ -464,6 +407,7 @@ photoplot<-ggplot(photo_summary, aes(x=temp, y=mean)) +
         panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 
+    
 geo_summary$xloc<- geo_summary$temp+0.5
 geo_summary$yloc<- NA
 geo_summary$yloc[geo_summary$inf_status == "U" & geo_summary$temp== "3"] <- 10
@@ -471,12 +415,12 @@ geo_summary$yloc[geo_summary$inf_status == "U" & geo_summary$temp== "3"] <- 10
 geoplot<-ggplot(geo_summary, aes(x=temp, y=mean)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se, fill=inf_status, group=inf_status), width=.3, position=pd, color="#000000") +
   geom_point(aes(fill=inf_status, group=inf_status), size=2, position=pd, shape= 21, colour="black")+
-  scale_fill_manual(values=c("white", "black"))+
+  scale_fill_manual(values=c("black", "white"))+
   xlab("Temperature °C")+
   ylab("Geotaxis Score")+
   xlim(2.5,19)+ 
-  geom_segment(aes(x = 3, y = 18, xend = 18, yend = 29.5), linetype="dashed")+
-  geom_segment(aes(x = 3, y = 14, xend = 18, yend = 25.5))+
+  geom_smooth(aes(linetype=inf_status),method='glm', se=FALSE, colour="black")+
+  stat_smooth(aes(linetype=inf_status),method = "glm", colour = "black", geom = "ribbon", fill = NA)+
   #geom_smooth(method='lm', se=F, formula = y~x)+
   #geom_smooth(method='glm', se=FALSE, colour="black")+
  # stat_smooth(method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
@@ -490,7 +434,7 @@ geoplot<-ggplot(geo_summary, aes(x=temp, y=mean)) +
 
 
 plot_grid(photoplot,geoplot,
-          labels=c("(a)","b."),
+          labels=c("(a)","(b)"),
           ncol=1, nrow=2)
 ```
 
