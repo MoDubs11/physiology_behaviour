@@ -1,0 +1,28 @@
+Type: Compendium
+Package: gammarus_physbeh
+Title: Analyses of the Impact of Temperature and Infection on Gammarus Physiology and Behaviour
+Version: 0.0.1
+Authors@R: 
+    person(given = "Maureen",
+           family = "Williams",
+           role = c("aut", "cre"),
+           email = "william2@tcd.ie",
+           comment = c(ORCID = "0000-0001-7886-9353"))
+Description: Analyses for the paper on Gammarus physiology
+    and behaviour
+License: What license it uses
+Depends: 
+    cowplot,
+    effsize,
+    ggplot2,
+    knitr,
+    lme4,
+    mgcv,
+    multcomp,
+    plyr,
+    prettydoc,
+    reshape2,
+    rmarkdown,
+    splines
+Encoding: UTF-8
+LazyData: true
