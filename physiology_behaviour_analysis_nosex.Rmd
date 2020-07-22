@@ -19,7 +19,7 @@ library("lme4")
 library("plyr")
 library("ggplot2")
 library("cowplot")
-total<-read.csv("total_budget_2.csv", header=T, stringsAsFactors = F) #load total phyusiology spreadsheet, top row headers, strings are not factors
+total<-read.csv("total_budget_2.csv", header=T, stringsAsFactors = F) #load total physiology spreadsheet, top row headers, strings are not factors
 
 attach(total) #attach physiology sheet
 total[total == "#N/A"] <- NA #Make sure NAs read as NAs
@@ -61,18 +61,14 @@ behav_total$temp<-as.numeric(behav_total$temp)
 behav_total$gam_id<-as.factor(behav_total$gam_id)
 behav_total$sex<-as.factor(behav_total$sex)
 
-
-```
-
 ##Load modified physiology datasets for easy plotting
-```{r}
 feeding<-read.csv("feeding_Joules.csv", header=T, stringsAsFactors = F)
 growth_all<-read.csv("gamm_sizechange_1.csv", header=T, stringsAsFactors = F)
 resp_clean<-read.csv("resp_joules_clean.csv", header=T, stringsAsFactors = F)
 eff<-read.csv("efficiency.csv", header=T, stringsAsFactors = F)
 ass<-read.csv("ass.csv", header=T, stringsAsFactors = F)
-```
 
+```
 
 #Physiology Analysis
 ##Feeding anaylsis 
@@ -144,6 +140,7 @@ summary(ass_GLM)
 ```
 
 
+
 #Behaviour Analysis
 ##Initial Weights T.Test
 ```{r}
@@ -163,7 +160,7 @@ str(behav_total$temp)
 b2 <- gamm(photo_score~s(temp,k=4)+inf_status, family=poisson,
            data=behav_total,random=list(gam_id=~1))
 plot(b2$gam,pages=1)
-anova(b2$gam)
+anova(b2$gam) 
 
 #Phototaxis
 LMER_full_photo <-
@@ -185,7 +182,6 @@ LMER_notemp_photo <-
        REML = FALSE,
        data = behav_total)
 
-
 LMER_noinf_photo <-
   lmer(photo_score ~ temp + (1 |gam_id),
        REML = FALSE,
@@ -196,7 +192,6 @@ anova(LMER_full_photo, LMER_interacting_photo)
 anova(LMER_full_photo, LMER_notemp_photo)
 
 #Geotaxis
-
 LMER_full_geo <-
   lmer(geo_score ~ inf_status + temp+ (1 |gam_id),
        REML = FALSE,
@@ -297,10 +292,6 @@ photo_summary_print <- ddply(behav_total, c("inf_status"), summarise,
 
 #Plotting
 
-```{r}
-pd <- position_dodge(width = 0.7)
-```
-
 ##Physiology
 ```{r}
 
@@ -317,8 +308,8 @@ stat_smooth(aes(group = 1), method = "glm", colour = "black", geom = "ribbon",li
   theme(panel.grid.major = element_blank(), legend.key=element_rect(fill='white'),
         legend.position = c(0.3, 0.8), panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
-        #axis.text=element_text(size=16),
-        #axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
         axis.line = element_line(colour = "black"))
 
 effplot<-ggplot(eff_summary, aes(x=temp, y=mean)) + 
@@ -330,8 +321,8 @@ effplot<-ggplot(eff_summary, aes(x=temp, y=mean)) +
     scale_x_continuous(breaks = c(3, 6, 9, 12, 15, 18))+
   theme(panel.grid.major = element_blank(), 
         legend.position = "none", panel.grid.minor = element_blank(),
-        #axis.text=element_text(size=16),
-        #axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 feedingplot2<-ggplot(feeding_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
@@ -347,23 +338,23 @@ stat_smooth(aes(group = 1), method = "glm", colour = "black", geom = "ribbon",li
   theme(panel.grid.major = element_blank(), legend.position = "none", 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
-        axis.line = element_line(colour = "black"))
-        #axis.text=element_text(size=16),
-        #axis.title=element_text(size=14))
+        axis.line = element_line(colour = "black"),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12))
 
 growthplot<-ggplot(growth_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
   geom_point(size=2, position=pd, shape= 21, colour="black")+
   scale_fill_manual(values=c("black", "white"))+
   xlab("")+
-  ylab("Growth Rate\n(mg/day)")+
+  ylab("Growth rate\n(mg/day)")+
       scale_x_continuous(breaks = c(3, 6, 9, 12, 15, 18))+
   theme(panel.grid.major = element_blank(), legend.position = "none", 
         panel.grid.minor = element_blank(),
         panel.background = element_blank(), 
-        axis.line = element_line(colour = "black"))
-        #axis.text=element_text(size=16),
-        #axis.title=element_text(size=14))
+        axis.line = element_line(colour = "black"),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12))
 
 assplot<-ggplot(ass_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_status)) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
@@ -374,8 +365,8 @@ assplot<-ggplot(ass_summary, aes(x=temp, y=mean, fill=inf_status, group=inf_stat
   ylab("Assimilation\n(J/day)")+
   theme(panel.grid.major = element_blank(), 
         legend.position = "none", panel.grid.minor = element_blank(),
-        #axis.text=element_text(size=16),
-        #axis.title=element_text(size=14),
+        axis.text=element_text(size=12),
+        axis.title=element_text(size=12),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 
@@ -408,6 +399,8 @@ photo_summary$yloc<- as.numeric(photo_summary$yloc)
 photo_summary$yloc <- photo_summary$mean-5
 photo_summary$yloc[photo_summary$inf_status == "U" & photo_summary$temp== "3"] <- 34
 
+    photo_summary$temp<-as.numeric(photo_summary$temp)
+
 
 photoplot<-ggplot(photo_summary, aes(x=temp, y=mean, fill=inf_status), group=inf_status) + 
   geom_errorbar(aes(ymin=mean-se, ymax=mean+se), width=.3, position=pd, color="#000000") +
@@ -421,13 +414,14 @@ photoplot<-ggplot(photo_summary, aes(x=temp, y=mean, fill=inf_status), group=inf
       scale_x_continuous(breaks = c(3, 6, 9, 12, 15, 18))+
   scale_shape_manual(values=c(1,19))+
   theme(panel.grid.major = element_blank(),  
-        axis.text=element_text(size=16,color = "black"),
-        axis.title=element_text(size=16),
+        axis.text=element_text(size=12,color = "black"),
+        axis.title=element_text(size=12),
         legend.position="none", panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
 
-    
+    geo_summary$temp<-as.numeric(geo_summary$temp)
+
 geo_summary$xloc<- geo_summary$temp+0.5
 geo_summary$yloc<- NA
 geo_summary$yloc[geo_summary$inf_status == "U" & geo_summary$temp== "3"] <- 10
@@ -441,14 +435,14 @@ geoplot<-ggplot(geo_summary, aes(x=temp, y=mean)) +
   xlim(2.5,19)+ 
   geom_smooth(aes(linetype=inf_status),method='glm', se=FALSE, colour="black")+
   stat_smooth(aes(linetype=inf_status),method = "glm", colour = "black", geom = "ribbon", fill = NA)+
-      scale_x_continuous(breaks = c(3, 6, 9, 12, 15, 18))+
+  scale_x_continuous(breaks = c(3, 6, 9, 12, 15, 18))+
   #geom_smooth(method='lm', se=F, formula = y~x)+
   #geom_smooth(method='glm', se=FALSE, colour="black")+
  # stat_smooth(method = "glm", colour = "black", geom = "ribbon",linetype=2, fill = NA)+
   scale_shape_manual(values=c(1,19))+
   theme(panel.grid.major = element_blank(),
-        axis.text=element_text(size=16, color = "black"),
-        axis.title=element_text(size=16),
+        axis.text=element_text(size=12, color = "black"),
+        axis.title=element_text(size=12),
         legend.position="none", panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black"))
 
